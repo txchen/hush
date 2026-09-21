@@ -11,6 +11,36 @@ Secret values are encrypted before they reach the server. A **Profile** maps sel
 
 **Getting started:** [Deploy](#deploy-your-vault) → [Create a vault](#create-your-first-secret-and-profile) → [Install the CLI](#install-the-cli) → [Connect a machine](#connect-a-machine).
 
+## How it works
+
+```mermaid
+flowchart LR
+    subgraph browser["Your browser"]
+        Web["Web admin<br/>Encrypt secrets and manage profiles/devices"]
+    end
+
+    subgraph cloud["Your Cloudflare account"]
+        Access["Access<br/>Authenticate requests"]
+        API["Worker API"]
+        DB[("D1<br/>Encrypted values and wrapped keys<br/>Readable metadata")]
+        Access --> API
+        API <--> DB
+    end
+
+    subgraph machine["Your agent machine"]
+        Agent["Coding agent"]
+        CLI["hush CLI<br/>Decrypt locally"]
+        Command["Command<br/>gh, wrangler, ..."]
+        Agent -->|"hush exec profile -- command"| CLI
+        CLI -->|"Selected environment variables"| Command
+    end
+
+    Web <-->|"Owner sign-in / vault updates"| Access
+    CLI <-->|"Service Token / encrypted reads"| Access
+```
+
+The Worker serves the Web app and stores its encrypted uploads in D1. You enroll each machine once through Web admin; agents then use the CLI without entering the master password. Decryption happens on the client, and every CLI execution needs an online service.
+
 ## Deploy your vault
 
 You need a Cloudflare account with Workers, D1, and Zero Trust Access, a domain managed by Cloudflare, and Node.js 24+ with npm 11 on the machine you deploy from. Choose an unused hostname such as `hush.example.com`. The Web admin and API share this hostname; no separate frontend hosting or always-on server is needed.
