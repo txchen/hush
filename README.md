@@ -2,13 +2,14 @@
 
 A personal encrypted secret vault for developer and coding-agent workflows. The service stores ciphertext and public metadata; clients retain all secret decryption keys.
 
-The implementation includes the **Cloudflare Worker API** and **Vue Web admin**. The Go CLI is a follow-up application. CLI device credentials are read-only; all user-initiated changes belong to the Web admin workflow.
+The implementation includes the **Cloudflare Worker API**, **Vue Web admin**, and **Go CLI** for Linux ARM64/x86_64 and macOS ARM64. CLI device credentials are read-only; all user-initiated service changes belong to the Web admin workflow.
 
 ## Repository
 
 ```text
 apps/service/           Hono API, D1 migrations, Workers integration tests
 apps/web/               Vue Web admin and browser tests
+apps/cli/               Go CLI, agent execution, local credentials, and tests
 contracts/openapi.yaml  Generated API contract
 contracts/crypto.md     Versioned client cryptographic protocol
 contracts/fixtures/     Public interoperability test vectors
@@ -20,11 +21,11 @@ CONTEXT.md             Domain glossary
 .scratch/              Agreed service and Web implementation scopes
 ```
 
-The Web admin uses Vue 3, TypeScript, Composition API, and Vite+, with `vue-tsc` for type checking. Its static assets are served on the API's origin. The future CLI will live at `apps/cli/` as an independent Go module. No React or pnpm is required.
+The Web admin uses Vue 3, TypeScript, Composition API, and Vite+, with `vue-tsc` for type checking. Its static assets are served on the API's origin. The CLI is an independent Go module at `apps/cli/`. No React or pnpm is required.
 
 ## Development
 
-Use Node.js 24+ and npm 11. Go 1.26+ is only needed for the independent cryptographic interoperability check.
+Use Node.js 24+ and npm 11. Go 1.26+ is needed for the CLI and independent cryptographic interoperability check; Python 3 is used to package CLI release archives.
 
 ```sh
 npm ci
@@ -32,7 +33,9 @@ npm run check
 npm test
 npm run test:crypto
 npm run test:crypto:go
+npm run test:cli
 npm run build
+npm run build:cli
 ```
 
 `build` builds the Web assets and runs a Wrangler dry run; it does not deploy. Tests run real local D1 through Cloudflare's Workers Vitest integration; authentication uses locally signed test JWTs and mocked public-key discovery. The production Worker has no authentication bypass.
@@ -48,6 +51,20 @@ npm run dev
 ```
 
 The checked-in Access configuration is deliberately nonfunctional. Unconfigured requests fail closed with `503`; use integration tests for the fully automated local API workflow. Local manual requests require a valid JWT for your configured Access application. Do not put JWTs, service-token secrets, master passwords, or vault keys in repository files.
+
+## CLI for agents
+
+After one-time local setup and Web enrollment, agents can use:
+
+```sh
+hush status --json
+hush profile list --json
+hush exec github -- gh api user
+```
+
+The CLI fetches ciphertext online for every execution, decrypts locally, and supplies only the selected Profile's values to the command. Service failures prevent execution. Device credentials are stored in private local files for unattended use; vault keys and secret values are not cached on disk. See the [CLI guide](apps/cli/README.md) for installation, enrollment, container use, and credential handling.
+
+`npm run build:cli` creates three archives and SHA-256 checksums under `dist/cli/dev/`. The CLI CI workflow tests native platforms and Alpine and uploads build artifacts; it does not publish releases.
 
 ## Web admin
 

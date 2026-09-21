@@ -1,0 +1,3 @@
+# Store CLI credentials in private local files
+
+The CLI primarily serves unattended coding agents, including headless Linux machines, so device private keys and Cloudflare Access credentials are stored in local files on every supported platform, using directory permissions `0700` and credential-file permissions `0600`. This supersedes the original design's preference for OS keychains for CLI credentials: predictable unattended access is preferred over requiring an available, unlocked platform credential store. Theft of these files or compromise of the local user account permits device impersonation; plaintext VEKs and vault-content caches are not persisted, and each execution requires online service access.
