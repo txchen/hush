@@ -1,6 +1,6 @@
 # CLI Implementation Scope
 
-Status: Implemented and locally validated. Native Linux ARM64/macOS ARM64 CI runs and production enrollment remain unverified.
+Status: Implemented and validated locally and in native multi-platform GitHub Actions. Production enrollment remains unverified.
 
 ## Confirmed requirements
 
@@ -54,8 +54,8 @@ Status: Implemented and locally validated. Native Linux ARM64/macOS ARM64 CI run
 - Linux x86_64 tests passed natively with the race detector and in an Alpine 3.23 container using the static test binary. Tests cover protocol fixtures, failure paths that must not execute commands, local credential lifecycle, and subprocess behavior. `go vet` passed.
 - All three target archives and SHA-256 checksums built locally. Both Linux targets are statically linked; macOS output is an ARM64 Mach-O executable. Deterministic packaging was checked by rebuilding all targets and comparing checksums.
 - Existing repository type/format/lint/contract checks, 30 service tests, three Web crypto tests, and JavaScript/Go interoperability checks passed.
-- CI is configured for native Linux x86_64/ARM64, Apple Silicon macOS 14/15/26, Alpine tests on both Linux architectures, and archive artifact upload. These remote CI jobs have not been run during implementation; local cross-compilation is not a claim of native ARM/macOS runtime validation.
-- Installation, one-time enrollment, agent usage, container setup, and troubleshooting are documented in `apps/cli/README.md`. No remote release or Cloudflare deployment was performed.
+- Native GitHub Actions tests passed on Linux x86_64/ARM64 and Apple Silicon macOS 14/15/26, including Alpine tests on both Linux architectures and service/Web checks. See [the initial CI run](https://github.com/txchen/hush/actions/runs/35645840653). Release tags build versioned archives after the same checks pass.
+- Installation, one-time enrollment, agent usage, container setup, and troubleshooting are documented in `apps/cli/README.md`. The user subsequently authorized publishing the repository and CLI version `0.0.1`; Cloudflare deployment remains outside this work.
 
 ## References
 

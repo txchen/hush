@@ -54,6 +54,8 @@ The checked-in Access configuration is deliberately nonfunctional. Unconfigured 
 
 ## CLI for agents
 
+Download prebuilt binaries and checksums from [GitHub Releases](https://github.com/txchen/hush/releases).
+
 After one-time local setup and Web enrollment, agents can use:
 
 ```sh

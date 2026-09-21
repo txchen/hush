@@ -6,7 +6,7 @@ A read-only Go client for coding agents. It decrypts selected Profile secrets lo
 
 The release build produces `linux/amd64`, `linux/arm64`, and `darwin/arm64` archives containing a standalone `hush` executable, plus `SHA256SUMS`. Linux uses `CGO_ENABLED=0` and needs no system dynamic libraries, desktop, or keychain. HTTPS still requires trusted CA certificates. The macOS runtime matrix covers Apple Silicon on macOS 14, 15, and 26; the binaries are not Developer ID signed or notarized.
 
-Download the matching archive and checksums from your trusted build distribution, verify the checksum, then extract and install `hush` into a directory on your `PATH`. For example, for a local development build on Linux x86_64:
+Download the matching archive and checksums from [GitHub Releases](https://github.com/txchen/hush/releases), verify the checksum, then extract and install `hush` into a directory on your `PATH`. For example, for a local development build on Linux x86_64:
 
 ```sh
 python3 scripts/build-cli.py --version dev
