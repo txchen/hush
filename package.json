@@ -1,0 +1,42 @@
+{
+  "name": "hush",
+  "private": true,
+  "workspaces": [
+    "apps/service",
+    "apps/web"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "npm run dev -w @hush/service",
+    "test": "npm run build -w @hush/web && npm run test --workspaces",
+    "typecheck": "npm run typecheck --workspaces",
+    "check": "npm run typecheck && vp check && node scripts/contracts.mjs --check",
+    "contracts": "node scripts/contracts.mjs",
+    "test:crypto": "node scripts/crypto-vectors.mjs",
+    "test:crypto:go": "cd contracts/verify-go && go test ./...",
+    "format": "vp fmt",
+    "build": "npm run build -w @hush/web && npm run build -w @hush/service",
+    "db:migrate": "npm run db:migrate -w @hush/service",
+    "dev:web": "npm run dev -w @hush/web",
+    "test:ui": "npm run test:ui -w @hush/web"
+  },
+  "devDependencies": {
+    "@hpke/core": "1.9.0",
+    "@noble/hashes": "2.4.0",
+    "@types/node": "^24.0.0",
+    "typescript": "~5.9.3",
+    "vite-plus": "0.3.3",
+    "yaml": "2.9.1"
+  },
+  "overrides": {
+    "miniflare": "5.20260921.0-alpha",
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.3.3",
+    "vitest": "4.1.11",
+    "workerd": "1.20260921.1",
+    "wrangler": "4.136.1"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "packageManager": "npm@11.6.2"
+}

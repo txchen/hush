@@ -1,0 +1,30 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "hush-service",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "assets": {
+    "directory": "../web/dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"],
+  },
+  "observability": { "enabled": true, "head_sampling_rate": 1 },
+  "vars": {
+    "ACCESS_TEAM_DOMAIN": "configure-me.cloudflareaccess.com",
+    "ACCESS_AUDIENCE": "configure-me",
+    "OWNER_EMAIL": "owner@example.invalid",
+    "ADMIN_ORIGIN": "https://hush.example.invalid",
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "hush",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations",
+    },
+  ],
+}

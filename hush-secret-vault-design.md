@@ -1,5 +1,7 @@
 # Hush — Secret Vault Design Specification
 
+> Implementation update: [Service Implementation Scope](.scratch/service/spec.md) records subsequent agreed decisions and takes precedence where this original design differs. In particular, CLI device access is read-only, and all user-initiated service mutations, including device enrollment and vault recovery setup, belong to the Web admin workflow.
+
 ## 1. Overview
 
 `hush` is a lightweight zero-knowledge secret-management system for developer and coding-agent workflows.

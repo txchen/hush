@@ -1,0 +1,22 @@
+{
+  "name": "@hush/service",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "wrangler deploy --dry-run --outdir dist",
+    "types": "wrangler types --strict-vars=false",
+    "typecheck": "tsc --noEmit",
+    "test": "vp test run",
+    "db:migrate": "wrangler d1 migrations apply hush --local"
+  },
+  "dependencies": {
+    "hono": "4.13.8",
+    "jose": "6.2.12",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "0.22.0",
+    "wrangler": "4.136.1"
+  }
+}

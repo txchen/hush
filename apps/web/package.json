@@ -1,0 +1,23 @@
+{
+  "name": "@hush/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vp dev --host 127.0.0.1",
+    "build": "vue-tsc --noEmit && vp build",
+    "typecheck": "vue-tsc --noEmit",
+    "test": "vp test run",
+    "test:ui": "playwright test"
+  },
+  "dependencies": {
+    "@hpke/core": "1.9.0",
+    "@noble/hashes": "2.4.0",
+    "vue": "3.5.43",
+    "vue-router": "5.3.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@vitejs/plugin-vue": "6.0.9",
+    "vue-tsc": "3.3.11"
+  }
+}
