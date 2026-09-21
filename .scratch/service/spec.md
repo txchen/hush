@@ -2,9 +2,7 @@
 
 Status: Service implementation complete; local validation passed. Production deployment and client applications remain follow-up work.
 
-The baseline product specification is [Hush Secret Vault Design](../../hush-secret-vault-design.md). This document records implementation decisions agreed during the service design interview.
-
-Where this document differs from the baseline, these later decisions take precedence, especially the read-only CLI and Web-admin-only mutation workflow.
+This document records implementation decisions agreed during the service design interview. It superseded the original design proposal, which has since been removed because it described obsolete workflows. Current user guidance lives in the [README](../../README.md), and cryptographic details live in the [protocol](../../contracts/crypto.md).
 
 ## Confirmed scope
 

@@ -1,117 +1,143 @@
 # Hush
 
-A personal encrypted secret vault for developer and coding-agent workflows. The service stores ciphertext and public metadata; clients retain all secret decryption keys.
-
-The implementation includes the **Cloudflare Worker API**, **Vue Web admin**, and **Go CLI** for Linux ARM64/x86_64 and macOS ARM64. CLI device credentials are read-only; all user-initiated service changes belong to the Web admin workflow.
-
-## Repository
-
-```text
-apps/service/           Hono API, D1 migrations, Workers integration tests
-apps/web/               Vue Web admin and browser tests
-apps/cli/               Go CLI, agent execution, local credentials, and tests
-contracts/openapi.yaml  Generated API contract
-contracts/crypto.md     Versioned client cryptographic protocol
-contracts/fixtures/     Public interoperability test vectors
-contracts/verify-go/    Go protocol verification, not the CLI application
-scripts/               Contract generation and JavaScript vector verification
-docs/adr/              Architecture decisions
-docs/agents/           Repository guidance
-CONTEXT.md             Domain glossary
-.scratch/              Agreed service and Web implementation scopes
-```
-
-The Web admin uses Vue 3, TypeScript, Composition API, and Vite+, with `vue-tsc` for type checking. Its static assets are served on the API's origin. The CLI is an independent Go module at `apps/cli/`. No React or pnpm is required.
-
-## Development
-
-Use Node.js 24+ and npm 11. Go 1.26+ is needed for the CLI and independent cryptographic interoperability check; Python 3 is used to package CLI release archives.
+A personal secret vault for coding agents. Deploy it to your Cloudflare account, manage secrets in your browser, and give commands the credentials they need:
 
 ```sh
-npm ci
-npm run check
-npm test
-npm run test:crypto
-npm run test:crypto:go
-npm run test:cli
-npm run build
-npm run build:cli
-```
-
-`build` builds the Web assets and runs a Wrangler dry run; it does not deploy. Tests run real local D1 through Cloudflare's Workers Vitest integration; authentication uses locally signed test JWTs and mocked public-key discovery. The production Worker has no authentication bypass.
-
-Vite+ is installed locally and invoked by npm scripts. npm workspaces manages dependencies and the root lockfile. Version overrides align Vite/Vitest and the Cloudflare test pool's Miniflare/workerd with Wrangler; update these together and run all tests. Runtime bindings are generated with `npm run types -w @hush/service`.
-
-To start the local Worker:
-
-```sh
-npm run db:migrate
-npm run build -w @hush/web
-npm run dev
-```
-
-The checked-in Access configuration is deliberately nonfunctional. Unconfigured requests fail closed with `503`; use integration tests for the fully automated local API workflow. Local manual requests require a valid JWT for your configured Access application. Do not put JWTs, service-token secrets, master passwords, or vault keys in repository files.
-
-## CLI for agents
-
-Download prebuilt binaries and checksums from [GitHub Releases](https://github.com/txchen/hush/releases).
-
-After one-time local setup and Web enrollment, agents can use:
-
-```sh
-hush status --json
-hush profile list --json
 hush exec github -- gh api user
+hush exec cloudflare -- wrangler deploy
 ```
 
-The CLI fetches ciphertext online for every execution, decrypts locally, and supplies only the selected Profile's values to the command. Service failures prevent execution. Device credentials are stored in private local files for unattended use; vault keys and secret values are not cached on disk. See the [CLI guide](apps/cli/README.md) for installation, enrollment, container use, and credential handling.
+Secret values are encrypted before they reach the server. A **Profile** maps selected secrets to environment variables; `hush exec` decrypts those values locally and passes them to the command. The CLI supports Linux x86_64, Linux ARM64, and Apple Silicon macOS.
 
-`npm run build:cli` creates three archives and SHA-256 checksums under `dist/cli/dev/`. The CLI CI workflow tests native platforms and Alpine and uploads build artifacts; it does not publish releases.
+**Getting started:** [Deploy](#deploy-your-vault) → [Create a vault](#create-your-first-secret-and-profile) → [Install the CLI](#install-the-cli) → [Connect a machine](#connect-a-machine).
 
-## Web admin
+## Deploy your vault
 
-The Web admin supports vault initialization and unlock, secret and profile editing, device management, password changes, key rotation, and audit history. Encryption and password derivation run in the browser; Argon2id runs in a dedicated worker. Sessions lock after 15 minutes of inactivity. Optional browser trust stores a non-extractable device private key in IndexedDB.
+You need a Cloudflare account with Workers, D1, and Zero Trust Access, a domain managed by Cloudflare, and Node.js 24+ with npm 11 on the machine you deploy from. Choose an unused hostname such as `hush.example.com`. The Web admin and API share this hostname; no separate frontend hosting or always-on server is needed.
 
-The owner-only Database viewer shows schema and raw stored values for eight application tables, with 50-row pagination and JSON inspection. It does not decrypt values, accept arbitrary SQL, or edit rows.
-
-Run `npm run dev:web` for the Vite development server, which proxies `/api` to the local Worker on port 8787. Worker authentication requirements still apply.
-
-Browser tests use isolated HTTP fixtures with real browser cryptography:
+### 1. Get the code and create the database
 
 ```sh
-npx playwright install chromium
-npm run test:ui
+git clone https://github.com/txchen/hush.git
+cd hush
+npm ci
+(cd apps/service && npx wrangler login)
+(cd apps/service && npx wrangler d1 create hush)
 ```
 
-## Cloudflare setup
+Keep the returned database ID for step 3. The database holds encrypted secret values, wrapped keys, and metadata. See Cloudflare's [D1 setup guide](https://developers.cloudflare.com/d1/get-started/) if your account needs additional setup.
 
-1. Create a D1 database with `npx wrangler d1 create hush` from `apps/service/`, and put its ID in `wrangler.jsonc`.
-2. Configure an Access self-hosted application for your Hush domain. Add a human Allow policy restricted to your owner email and a Service Auth policy for the machine tokens you explicitly provision.
-3. Set `ACCESS_TEAM_DOMAIN` (hostname only), `ACCESS_AUDIENCE` (application AUD), `OWNER_EMAIL`, and `ADMIN_ORIGIN` (exact HTTPS origin, no trailing slash) in the Worker configuration. Add the domain route. Keep workers.dev and preview URLs disabled.
-4. Apply migrations using `npx wrangler d1 migrations apply hush --remote`, then deploy with `npx wrangler deploy`. These are manual deployment steps; this implementation has not provisioned remote resources.
-5. Use the Web admin to initialize the vault and enroll devices. Each CLI device generates a private key locally; only its public key and Access Client ID are entered in Web admin. The browser creates the device-wrapped VEK locally.
+### 2. Protect the hostname with Cloudflare Access
 
-CLI requests send both `CF-Access-Client-Id` and `CF-Access-Client-Secret` to Access on each request. The Worker verifies the resulting Access JWT and binds its `common_name` to the enrolled Client ID. It never trusts a caller-supplied device ID. Human admin authority comes from the verified email, not a browser user-agent header.
+Create a [self-hosted Access application](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/self-hosted-public-app/) for `hush.example.com`, covering the entire hostname, including `/api/*` and the Web admin.
 
-## API and behavior
+- Add an **Allow** policy restricted to your owner email. Use that same email for `OWNER_EMAIL` below.
+- Configure a login method for that account.
+- Copy the application's **Application Audience (AUD)** value and your Zero Trust team domain, such as `your-team.cloudflareaccess.com`.
 
-All endpoints are under `/api/v1`; see [OpenAPI](contracts/openapi.yaml) and [the cryptographic protocol](contracts/crypto.md). Regenerate the contract with `npm run contracts` after request schema changes.
+Access sign-in authorizes you to use the service. Your Hush master password, created later, unlocks the encrypted vault. They are separate credentials.
 
-- Owner writes require the configured `Origin`, `X-Hush-Request: 1`, and `If-Match: "<revision>"`. Initialization uses revision `"0"`. JSON endpoints require `Content-Type: application/json`; delete and soft-revoke endpoints have no body.
-- Reads expose a vault-wide revision through `ETag`. All responses use `Cache-Control: no-store`.
-- A stale write returns `409`. Fetch a fresh snapshot and recompute encryption; never blindly replay a rotation. After a network timeout, inspect current state before deciding whether a write committed.
-- Secret IDs are client-generated lowercase UUIDs so clients can bind encryption to the record before uploading. Secret versions start at 1 and advance on every replacement and rotation.
-- Profiles map selected secrets to unique environment variable names. Remove mappings before deleting a referenced secret; the service rejects deletion with `secret_in_use`.
-- Soft revoke clears the device wrap and blocks its future API reads. Browser trust revocation does not revoke the owner's Access identity. A user who can authenticate and recover with the master password can enroll again.
-- Rotation submits all current secret ciphertexts, a new master wrap, and exactly one new wrap for each remaining active device. Revocation and new state publish in one transaction. Already soft-revoked devices are automatically excluded.
-- Audit records describe service operations, never local plaintext reveals. Device last-seen records successful ciphertext/key fetches. Neither audit nor activity updates advances the vault revision.
+### 3. Configure Hush
 
-## Limits and trust boundary
+Edit [`apps/service/wrangler.jsonc`](apps/service/wrangler.jsonc). Replace its existing `vars` and `d1_databases` entries and add `routes` using your own values:
 
-The service supports 500 secrets, 50 active devices, 500 total device records including revocation tombstones, 100 profiles, and 500 mappings per profile. Secret envelopes are at most 16 KiB; the ciphertext field is capped at 12,200 decoded bytes including the 16-byte tag (12,184 plaintext bytes). Rotation bodies are capped at 10 MiB and other JSON bodies at 1 MiB. Body size is enforced while streaming, even without Content-Length.
+```jsonc
+{
+  "routes": [{ "pattern": "hush.example.com", "custom_domain": true }],
+  "vars": {
+    "ACCESS_TEAM_DOMAIN": "your-team.cloudflareaccess.com",
+    "ACCESS_AUDIENCE": "your-access-application-aud",
+    "OWNER_EMAIL": "you@example.com",
+    "ADMIN_ORIGIN": "https://hush.example.com",
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "hush",
+      "database_id": "your-database-id",
+      "migrations_dir": "migrations",
+    },
+  ],
+}
+```
 
-Names, mappings, timestamps, and device public keys are public metadata. The Worker checks strict envelope structure, lengths, versions, and known nonce reuse; it cannot prove that an uploaded blob is correctly encrypted or wraps the same VEK. Authorized clients must implement [crypto.md](contracts/crypto.md) correctly. Secret encryption code and fixture private keys are not part of the Worker bundle.
+This is a configuration excerpt: retain the other existing fields, including `main`, `assets`, and compatibility settings. Keep `workers_dev` and `preview_urls` disabled. `ACCESS_TEAM_DOMAIN` is a hostname without `https://`; `ADMIN_ORIGIN` includes `https://` and has no trailing slash. Never put your master password, device private key, or Access Client Secret into this file.
 
-VEK rotation cannot retract previously copied secrets. Hosted frontend delivery remains trusted: a compromised frontend can misuse browser keys. `hush exec` is intended to reduce accidental exposure, not contain an agent with arbitrary local execution privileges.
+The route uses a Workers [Custom Domain](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/). Cloudflare provisions its DNS record and certificate; choose a hostname without an existing conflicting CNAME record.
 
-The local maximum-capacity test validates transaction behavior, not production latency or Cloudflare plan quotas. Confirm production performance on the target account before operational use.
+### 4. Build and deploy
+
+Run from the repository root:
+
+```sh
+npm run build -w @hush/web
+(cd apps/service && npx wrangler d1 migrations apply hush --remote)
+(cd apps/service && npx wrangler deploy)
+```
+
+Open `https://hush.example.com` and sign in through Access. You should see **Create your vault**. If setup fails, see [troubleshooting](docs/operations.md#troubleshooting).
+
+## Create your first secret and profile
+
+1. Choose a vault name and a long, unique master password. Store the password somewhere safe; Hush has no password-reset service. **Trust this browser** is optional and allows future unlocks using a key stored on that browser.
+2. In **Secrets**, add a secret named `GITHUB_TOKEN` with your GitHub token as its value.
+3. In **Profiles**, create a profile named `github`. Select that secret and map it to the environment variable `GITHUB_TOKEN`.
+
+You can add more profiles, such as `cloudflare` with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Secret edits, profile changes, and device management happen in the Web admin; CLI devices have read-only service access.
+
+## Install the CLI
+
+Download the archive for your machine and `SHA256SUMS` from [GitHub Releases](https://github.com/txchen/hush/releases/latest). No Go or Node.js installation is needed to run the CLI.
+
+| Machine           | Archive suffix        |
+| ----------------- | --------------------- |
+| Linux x86_64      | `linux_amd64.tar.gz`  |
+| Linux ARM64       | `linux_arm64.tar.gz`  |
+| Apple Silicon Mac | `darwin_arm64.tar.gz` |
+
+The [CLI installation guide](apps/cli/README.md#installation) includes download, checksum verification, and installation commands for all three platforms. Linux containers need a CA certificate bundle. macOS binaries are not Developer ID signed or notarized.
+
+## Connect a machine
+
+Do this once on each machine that will run `hush`:
+
+1. Create a [Cloudflare Access Service Token](https://developers.cloudflare.com/cloudflare-one/access-controls/service-credentials/service-tokens/) for the machine. Save its **Client ID** and **Client Secret**. In your Hush Access application, add a **Service Auth** policy that includes this token. Keep the owner's Allow policy as well.
+2. Generate the machine's device key:
+
+   ```sh
+   hush init --url https://hush.example.com --name agent-server --client-id YOUR_ID.access
+   ```
+
+3. In Web admin, open **Devices → Register CLI device**. Copy the four fields printed by `hush init`: name, device ID (`id`), public key, and Access Client ID. These fields are public enrollment information; the private key stays on the machine.
+4. Run `hush login` and enter the **Client Secret** at the hidden prompt. This is the Access token secret, not your master password.
+5. Check the connection and run a command:
+
+   ```sh
+   hush status --json
+   hush profile list --json
+   hush exec github -- gh api user
+   ```
+
+Once connected, agents can run `hush exec` without interactive login. Credentials are kept in a private local file, so access to that file grants access as the device. See [CLI configuration and credential handling](apps/cli/README.md#configuration-and-local-security) for custom directories and automated provisioning.
+
+## Day-to-day use
+
+- **Run a command:** `hush exec <profile> -- <command> [args...]`. Profile variables override matching variables in the current environment. Arguments, standard streams, signals, and exit status are preserved.
+- **Inspect available metadata:** `hush secret list --json` and `hush profile list --json`. The CLI does not offer a command to print individual secret values.
+- **Remove a machine:** revoke it in Web admin to block future reads. `hush logout` only removes credentials from the local machine.
+- **Update or back up your vault:** follow the [operations guide](docs/operations.md).
+
+Every execution needs an online service. If the service is unavailable or decryption fails, Hush does not start the command. A running command can still print or use its injected secrets; Hush does not sandbox agent code or redact command output.
+
+## What is encrypted?
+
+Secret **values** and the vault encryption key are stored encrypted. Secret names, profile mappings, device information, and timestamps are visible to the service. A database copy alone does not directly reveal secret values, but it permits offline guessing of the master password, so password strength matters.
+
+Read [How Hush encryption works](docs/encryption.md) for the key flow and security boundaries, or the [format-1 protocol](contracts/crypto.md) for exact algorithms and wire formats.
+
+## Further reading
+
+- [CLI reference](apps/cli/README.md)
+- [Updates, backups, and troubleshooting](docs/operations.md)
+- [Development and testing](docs/development.md)
+- [API contract](contracts/openapi.yaml)

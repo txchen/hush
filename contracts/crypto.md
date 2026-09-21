@@ -1,6 +1,8 @@
 # Hush Cryptographic Protocol, Format 1
 
-This contract is shared by the future Vue and Go clients. All secret encryption and decryption runs on clients. The Worker handles opaque envelopes; it never receives the master password, KEK, plaintext VEK, or device private keys.
+This contract is implemented by the Vue Web admin and Go CLI. For an introduction to the key flow and security boundaries, read [How Hush encryption works](../docs/encryption.md). This document specifies the wire format for client implementers.
+
+All secret encryption and decryption runs on clients. The Worker handles opaque envelopes; normal client requests never send the master password, KEK, plaintext VEK, or device private keys.
 
 ## Encoding
 

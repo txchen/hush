@@ -2,22 +2,55 @@
 
 A read-only Go client for coding agents. It decrypts selected Profile secrets locally and supplies them to a command as environment variables. Every execution requires the service; there is no offline vault cache.
 
-## Platforms and installation
+## Installation
 
 The release build produces `linux/amd64`, `linux/arm64`, and `darwin/arm64` archives containing a standalone `hush` executable, plus `SHA256SUMS`. Linux uses `CGO_ENABLED=0` and needs no system dynamic libraries, desktop, or keychain. HTTPS still requires trusted CA certificates. The macOS runtime matrix covers Apple Silicon on macOS 14, 15, and 26; the binaries are not Developer ID signed or notarized.
 
-Download the matching archive and checksums from [GitHub Releases](https://github.com/txchen/hush/releases), verify the checksum, then extract and install `hush` into a directory on your `PATH`. For example, for a local development build on Linux x86_64:
+Download the matching archive and checksums from [GitHub Releases](https://github.com/txchen/hush/releases). The following commands install version `0.0.1`; set `HUSH_TARGET` for your machine:
+
+| Machine           | `HUSH_TARGET`  |
+| ----------------- | -------------- |
+| Linux x86_64      | `linux_amd64`  |
+| Linux ARM64       | `linux_arm64`  |
+| Apple Silicon Mac | `darwin_arm64` |
+
+Run in an empty download directory:
 
 ```sh
-python3 scripts/build-cli.py --version dev
-cd dist/cli/dev
-sha256sum --check SHA256SUMS
-tar -xzf hush_dev_linux_amd64.tar.gz
-mkdir -p "$HOME/.local/bin"
-install -m 0755 hush "$HOME/.local/bin/hush"
+HUSH_VERSION=0.0.1
+HUSH_TARGET=linux_amd64
+HUSH_ARCHIVE="hush_${HUSH_VERSION}_${HUSH_TARGET}.tar.gz"
+HUSH_RELEASE="https://github.com/txchen/hush/releases/download/v${HUSH_VERSION}"
+curl -fLO "$HUSH_RELEASE/$HUSH_ARCHIVE"
+curl -fLO "$HUSH_RELEASE/SHA256SUMS"
+awk -v name="$HUSH_ARCHIVE" '$2 == name { print; found = 1 } END { if (!found) exit 1 }' SHA256SUMS > CHECKSUM
 ```
 
-On macOS use `shasum -a 256 -c SHA256SUMS` and the `darwin_arm64` archive. No Homebrew formula, automatic updater, or install script is required. Keep the Go toolchain and version argument fixed to reproduce archive bytes.
+Verify the selected archive before extracting it. On Linux:
+
+```sh
+sha256sum --check CHECKSUM
+```
+
+On macOS:
+
+```sh
+shasum -a 256 -c CHECKSUM
+```
+
+After the checksum reports **OK**, install:
+
+```sh
+tar -xzf "$HUSH_ARCHIVE"
+mkdir -p "$HOME/.local/bin"
+install -m 0755 hush "$HOME/.local/bin/hush"
+export PATH="$HOME/.local/bin:$PATH"
+hush version
+```
+
+Add `$HOME/.local/bin` to your shell's startup configuration if it is not already on `PATH`. The prebuilt CLI needs neither Go nor Node.js. See [development](../../docs/development.md#build-cli-binaries) to build from source.
+
+Before enrollment, [deploy Hush and initialize your vault](../../README.md#deploy-your-vault), or obtain the service hostname from its owner.
 
 ## One-time device enrollment
 
@@ -87,15 +120,8 @@ Service outages, expired Access tokens, revoked devices, TLS errors, malformed r
 
 If Access redirects to a human login page, check the **Service Auth** policy. If device unwrap fails, check that Web admin registered this installation's public key. If file permissions fail, inspect ownership and restore the private directory/file modes; do not share one writable configuration between OS users.
 
-## Development and validation
+## Further reading
 
-From the repository root:
-
-```sh
-(cd apps/cli && go test -race ./... && go vet ./...)
-python3 scripts/build-cli.py --version dev
-```
-
-Go 1.26+ is required for the standard library HPKE API; CI pins Go 1.26.5. Python 3 is needed only to build release archives. The CLI module is independent of npm and the Go interoperability verification module. Tests consume the shared public protocol fixture, use local HTTPS API fixtures with real cryptography, and exercise execution through subprocesses.
-
-`.github/workflows/cli.yml` runs tests on native Linux x86_64/ARM64 and macOS ARM64 runners, static tests in Alpine on both Linux architectures, and builds all archives after tests succeed. Cross-compilation alone does not establish runtime compatibility; check the actual CI results before publishing. The workflow uploads build artifacts and does not publish releases or deploy Cloudflare resources.
+- [Deployment and first use](../../README.md)
+- [Encryption flow](../../docs/encryption.md)
+- [Development, tests, and source builds](../../docs/development.md)
