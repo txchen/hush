@@ -1,5 +1,9 @@
 ## Agent skills
 
+### Use Hush credentials
+
+When using the Hush CLI to supply credentials to a command, select a Profile, or connect a machine, read `skills/hush/SKILL.md`.
+
 ### Issue tracker
 
 Issues are tracked as local Markdown files under `.scratch/`. See `docs/agents/issue-tracker.md`.

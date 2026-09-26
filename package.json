@@ -16,6 +16,8 @@
     "test:crypto:go": "cd contracts/verify-go && go test ./...",
     "test:cli": "cd apps/cli && go test -race ./... && go vet ./...",
     "build:cli": "python3 scripts/build-cli.py",
+    "pack:cli": "python3 scripts/package-cli-npm.py",
+    "test:cli:npm": "node --test scripts/test-cli-npm.mjs",
     "format": "vp fmt",
     "build": "npm run build -w @hush/web && npm run build -w @hush/service",
     "db:migrate": "npm run db:migrate -w @hush/service",

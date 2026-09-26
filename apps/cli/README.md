@@ -4,6 +4,21 @@ A read-only Go client for coding agents. It decrypts selected Profile secrets lo
 
 ## Installation
 
+With Node.js 24+ and npm:
+
+```sh
+npm install -g @txchen/hush
+hush version
+```
+
+npm selects the prebuilt binary for Linux x86_64, Linux ARM64, or Apple Silicon macOS. Keep optional dependencies enabled; installation works with `--ignore-scripts` and requires no Go compiler or separate binary download. If the platform package is missing, reinstall with `npm install -g @txchen/hush --include=optional`. Intel macOS and Windows are not supported.
+
+Upgrade with `npm install -g @txchen/hush@latest`, or select a specific version with `npm install -g @txchen/hush@<version>`. Upgrades retain the existing device identity and credentials. If `hush version` still shows an older standalone installation, check `command -v hush` and remove the old executable or adjust `PATH`.
+
+Before enrollment, [deploy Hush and initialize your vault](../../README.md#deploy-your-vault), or obtain the service hostname from its owner.
+
+### Standalone binary
+
 The release build produces `linux/amd64`, `linux/arm64`, and `darwin/arm64` archives containing a standalone `hush` executable, plus `SHA256SUMS`. Linux uses `CGO_ENABLED=0` and needs no system dynamic libraries, desktop, or keychain. HTTPS still requires trusted CA certificates. The macOS runtime matrix covers Apple Silicon on macOS 14, 15, and 26; the binaries are not Developer ID signed or notarized.
 
 Download the matching archive and checksums from [GitHub Releases](https://github.com/txchen/hush/releases). The following commands install version `0.0.1`; set `HUSH_TARGET` for your machine:
@@ -50,8 +65,6 @@ hush version
 
 Add `$HOME/.local/bin` to your shell's startup configuration if it is not already on `PATH`. The prebuilt CLI needs neither Go nor Node.js. See [development](../../docs/development.md#build-cli-binaries) to build from source.
 
-Before enrollment, [deploy Hush and initialize your vault](../../README.md#deploy-your-vault), or obtain the service hostname from its owner.
-
 ## One-time device enrollment
 
 1. Have the owner create a distinct Cloudflare Access Service Token for this machine and include it in the application's Service Auth policy. Keep its Client Secret private.
@@ -76,6 +89,8 @@ Before enrollment, [deploy Hush and initialize your vault](../../README.md#deplo
 For automated provisioning, a secret manager can pipe the token into `hush login --secret-stdin`. This reads one token with an optional trailing newline; it never prompts. Do not put the token itself in command-line arguments or a shell command saved in history.
 
 ## Agent commands
+
+For reusable agent instructions, use the [Hush skill](../../skills/hush/SKILL.md). Copy its complete directory into your agent's configured skills directory, including `references/`.
 
 ```sh
 hush status --json

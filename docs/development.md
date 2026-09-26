@@ -80,7 +80,29 @@ To build only for the current machine:
 ./dist/native/hush version
 ```
 
-Tag builds derive the version from `v<version>` and upload archives after service/Web and platform tests pass. The workflow does not itself create a GitHub Release or deploy Cloudflare resources. Release binaries should come from the successful tag run, with their checksums verified before publishing.
+Tag builds derive the version from `v<version>` and upload archives and npm tarballs after service/Web and native platform tests pass. A second matrix installs the npm tarballs on every supported runner. The workflow does not create a GitHub Release or deploy Cloudflare resources. Release binaries should come from the successful tag run, with their checksums verified before publishing.
+
+## Package and publish the CLI to npm
+
+```sh
+python3 scripts/build-cli.py --version 0.0.0-test
+npm run pack:cli -- --version 0.0.0-test
+npm run test:cli:npm
+node scripts/publish-cli-npm.mjs 0.0.0-test --dry-run
+```
+
+Packaging verifies `SHA256SUMS` and embeds those exact binaries in three platform packages, then creates the `@txchen/hush` entry package with exact-version optional dependencies. Generated packages and tarballs live in `dist/npm/<version>/`, outside the application's npm workspaces. Versions must be canonical SemVer without build metadata. Set `HUSH_NPM_VERSION=<version>` when testing a version other than `0.0.0-test`.
+
+The install test uses a disposable local registry and global prefix. It checks platform selection, installation with scripts disabled, the real binary's version, and launcher PID, arguments, environment, standard streams, signals, exit status, and missing/mismatched platform packages. It does not change the developer's global installation. The Node.js 24+ launcher uses [`process.execve`](https://nodejs.org/docs/latest-v24.x/api/process.html#processexecvefile-args-env) to replace itself with Go; this API is experimental, so CI tests the process behavior on all supported runners.
+
+For the first release:
+
+1. Create a `v<version>` tag and wait for CI, including `npm-test`, to pass. Download the `hush-npm` artifact into `dist/npm/<version>/` from that run.
+2. Log into npm as an account that owns `@txchen`, and run `node scripts/publish-cli-npm.mjs <version>`. This publishes the three platform tarballs before the entry package. Stable versions use `latest`; prereleases use `next`. Repeating the command skips versions already published with identical integrity and refuses to overwrite different contents.
+3. Configure an npm [trusted publisher](https://docs.npmjs.com/trusted-publishers/) for each of `@txchen/hush`, `@txchen/hush-linux-x64`, `@txchen/hush-linux-arm64`, and `@txchen/hush-darwin-arm64`: GitHub owner `txchen`, repository `hush`, workflow filename `cli.yml`, no environment name.
+4. Enable subsequent tag publishing with `gh variable set NPM_PUBLISH_ENABLED --body true`. The `npm-publish` job uses OIDC and requires no stored npm token. Leave this variable unset until all four trusted publishers are configured.
+
+Subsequent `v<version>` tags publish only after all checks pass. If a publication stops partway through, rerun the failed publish job using the original artifacts. The standalone GitHub Release archives remain available as a distribution channel without Node.js.
 
 ## API and concurrency
 

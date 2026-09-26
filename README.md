@@ -117,15 +117,22 @@ You can add more profiles, such as `cloudflare` with `CLOUDFLARE_API_TOKEN` and 
 
 ## Install the CLI
 
-Download the archive for your machine and `SHA256SUMS` from [GitHub Releases](https://github.com/txchen/hush/releases/latest). No Go or Node.js installation is needed to run the CLI.
+With Node.js 24+ and npm:
 
-| Machine           | Archive suffix        |
-| ----------------- | --------------------- |
-| Linux x86_64      | `linux_amd64.tar.gz`  |
-| Linux ARM64       | `linux_arm64.tar.gz`  |
-| Apple Silicon Mac | `darwin_arm64.tar.gz` |
+```sh
+npm install -g @txchen/hush
+hush version
+```
 
-The [CLI installation guide](apps/cli/README.md#installation) includes download, checksum verification, and installation commands for all three platforms. Linux containers need a CA certificate bundle. macOS binaries are not Developer ID signed or notarized.
+Supports Linux x86_64, Linux ARM64, and Apple Silicon macOS. npm installs the matching prebuilt binary; Go and install scripts are not required. Upgrade with `npm install -g @txchen/hush@latest`.
+
+For machines without Node.js, the [CLI installation guide](apps/cli/README.md#standalone-binary) includes standalone downloads, checksum verification, and installation commands. Linux containers need a CA certificate bundle. macOS binaries are not Developer ID signed or notarized.
+
+## Agent skill
+
+The [Hush skill](skills/hush/SKILL.md) teaches agents to select a Profile, run commands with injected credentials, and handle connection failures without exposing secret values. It includes setup guidance for machines using standalone binaries before npm publication.
+
+Copy the complete `skills/hush/` directory into your agent's configured skills directory, or ask the agent to read `skills/hush/SKILL.md` from this checkout. The skill and its bundled reference can be used independently of this repository; installing the CLI does not automatically install the skill.
 
 ## Connect a machine
 
