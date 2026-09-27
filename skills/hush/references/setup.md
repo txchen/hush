@@ -6,16 +6,16 @@ Read this only when the CLI is missing or the user asks to connect a machine. A 
 
 Hush supports Linux x86_64, Linux ARM64, and Apple Silicon macOS. Prefer an existing installation; check `command -v hush`, `hush version`, and `hush --help`.
 
-When `@txchen/hush` is published and available, Node.js 24+ users can install it with:
+Install the latest GitHub Release with:
 
 ```sh
-npm install -g @txchen/hush
+curl -fsSL https://raw.githubusercontent.com/txchen/hush/main/install.sh | bash
 hush version
 ```
 
-Keep optional dependencies enabled so npm installs the matching platform binary. Installation does not require install scripts or Go. A registry 404 can mean the npm package has not been published; do not substitute the unrelated unscoped `hush` package.
+The installer verifies SHA-256 and installs into `~/.local/bin`; add that directory to `PATH` if prompted. It requires Bash, curl, tar, and `sha256sum` or `shasum`, with no Node.js or Go dependency. For a specific release or directory, set `HUSH_VERSION=v0.0.1` or `HUSH_INSTALL_DIR=/absolute/path` on the `bash` side of the pipe. Reuse the original install directory when upgrading.
 
-Before npm publication, or on machines without Node.js, use a standalone binary from [Hush Releases](https://github.com/txchen/hush/releases). Follow the [standalone installation guide](https://github.com/txchen/hush/blob/main/apps/cli/README.md#standalone-binary): download the matching archive and `SHA256SUMS`, verify the selected archive before extracting, and install the executable on `PATH`. If no release binary exists, build from source using the [development guide](https://github.com/txchen/hush/blob/main/docs/development.md#build-cli-binaries).
+For manual installation, follow the [standalone installation guide](https://github.com/txchen/hush/blob/main/apps/cli/README.md#standalone-binary): download the matching archive and `SHA256SUMS` from [Hush Releases](https://github.com/txchen/hush/releases), verify the selected archive before extracting, and install the executable on `PATH`. If no release binary exists, build from source using the [development guide](https://github.com/txchen/hush/blob/main/docs/development.md#build-cli-binaries).
 
 Upgrading the executable retains credentials. Do not run `logout` or enroll a new device during an upgrade.
 

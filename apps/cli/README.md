@@ -4,16 +4,23 @@ A read-only Go client for coding agents. It decrypts selected Profile secrets lo
 
 ## Installation
 
-With Node.js 24+ and npm:
-
 ```sh
-npm install -g @txchen/hush
+curl -fsSL https://raw.githubusercontent.com/txchen/hush/main/install.sh | bash
 hush version
 ```
 
-npm selects the prebuilt binary for Linux x86_64, Linux ARM64, or Apple Silicon macOS. Keep optional dependencies enabled; installation works with `--ignore-scripts` and requires no Go compiler or separate binary download. If the platform package is missing, reinstall with `npm install -g @txchen/hush --include=optional`. Intel macOS and Windows are not supported.
+The installer selects the latest GitHub Release for Linux x86_64, Linux ARM64, or Apple Silicon macOS, verifies the archive against `SHA256SUMS`, and installs `hush` into `~/.local/bin`. It requires Bash, curl, tar, and either `sha256sum` or `shasum`. No Node.js or Go is required. Intel macOS and Windows are not supported.
 
-Upgrade with `npm install -g @txchen/hush@latest`, or select a specific version with `npm install -g @txchen/hush@<version>`. Upgrades retain the existing device identity and credentials. If `hush version` still shows an older standalone installation, check `command -v hush` and remove the old executable or adjust `PATH`.
+Add `~/.local/bin` to `PATH` if prompted. Run the same command to upgrade; existing device credentials are retained. The installer checks the downloaded executable before replacing an existing installation. It does not change your shell configuration or use sudo.
+
+To select a release tag or an absolute install directory, set the variables on the **bash** side of the pipe:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/txchen/hush/main/install.sh | HUSH_VERSION=v0.0.1 bash
+curl -fsSL https://raw.githubusercontent.com/txchen/hush/main/install.sh | HUSH_INSTALL_DIR="$HOME/bin" bash
+```
+
+For installation without running a downloaded script, follow the manual steps below. If `hush version` still shows an older installation, check `command -v hush` and adjust `PATH`.
 
 Before enrollment, [deploy Hush and initialize your vault](../../README.md#deploy-your-vault), or obtain the service hostname from its owner.
 

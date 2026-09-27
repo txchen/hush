@@ -77,9 +77,6 @@ jobs:
       version: ${{ steps.package.outputs.version }}
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "24"
       - uses: actions/setup-go@v6
         with:
           go-version: "1.26.5"
@@ -92,23 +89,21 @@ jobs:
         run: |
           version="0.0.0-dev.g${GITHUB_SHA:0:12}"
           if [ "$REF_TYPE" = tag ]; then
+            if [[ ! "$REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$ ]]; then
+              echo "Invalid release tag: $REF_NAME" >&2
+              exit 1
+            fi
             version="${REF_NAME#v}"
           fi
           python3 scripts/build-cli.py --version "$version"
-          python3 scripts/package-cli-npm.py --version "$version"
           echo "version=$version" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v4
         with:
           name: hush-cli
           path: dist/cli/
           if-no-files-found: error
-      - uses: actions/upload-artifact@v4
-        with:
-          name: hush-npm
-          path: dist/npm/${{ steps.package.outputs.version }}/*.tgz
-          if-no-files-found: error
 
-  npm-test:
+  install-test:
     needs: build
     strategy:
       fail-fast: false
@@ -117,34 +112,42 @@ jobs:
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "24"
       - uses: actions/download-artifact@v4
         with:
-          name: hush-npm
-          path: dist/npm/${{ needs.build.outputs.version }}
-      - run: node --test scripts/test-cli-npm.mjs
+          name: hush-cli
+          path: dist/cli
+      - run: bash -n install.sh
+      - run: python3 scripts/test-cli-install.py
         env:
-          HUSH_NPM_VERSION: ${{ needs.build.outputs.version }}
+          HUSH_TEST_ARCHIVE_DIR: dist/cli/${{ needs.build.outputs.version }}
 
-  npm-publish:
-    if: startsWith(github.ref, 'refs/tags/v') && vars.NPM_PUBLISH_ENABLED == 'true'
-    needs: [build, npm-test]
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build, install-test]
     runs-on: ubuntu-24.04
     permissions:
-      contents: read
-      id-token: write
+      contents: write
+    concurrency:
+      group: release-${{ github.ref }}
+      cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-      - run: npm install -g npm@11.6.2
       - uses: actions/download-artifact@v4
         with:
-          name: hush-npm
-          path: dist/npm/${{ needs.build.outputs.version }}
-      - run: node scripts/publish-cli-npm.mjs "$HUSH_NPM_VERSION"
+          name: hush-cli
+          path: dist/cli
+      - name: Publish verified archives to GitHub Releases
         env:
-          HUSH_NPM_VERSION: ${{ needs.build.outputs.version }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_VERSION: ${{ needs.build.outputs.version }}
+        shell: bash
+        run: |
+          cd "dist/cli/$RELEASE_VERSION"
+          sha256sum --check SHA256SUMS
+          flags=()
+          if [[ "$RELEASE_VERSION" == *-* ]]; then
+            flags+=(--prerelease --latest=false)
+          fi
+          gh release create "$RELEASE_TAG" ./*.tar.gz SHA256SUMS \
+            --verify-tag --generate-notes --title "Hush $RELEASE_TAG" "${flags[@]}"

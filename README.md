@@ -117,20 +117,18 @@ You can add more profiles, such as `cloudflare` with `CLOUDFLARE_API_TOKEN` and 
 
 ## Install the CLI
 
-With Node.js 24+ and npm:
-
 ```sh
-npm install -g @txchen/hush
+curl -fsSL https://raw.githubusercontent.com/txchen/hush/main/install.sh | bash
 hush version
 ```
 
-Supports Linux x86_64, Linux ARM64, and Apple Silicon macOS. npm installs the matching prebuilt binary; Go and install scripts are not required. Upgrade with `npm install -g @txchen/hush@latest`.
+Supports Linux x86_64, Linux ARM64, and Apple Silicon macOS. The installer downloads the latest GitHub Release, verifies SHA-256, and installs `hush` into `~/.local/bin`. Add that directory to `PATH` if prompted. No Node.js or Go is required. Run the same command to upgrade; your device credentials are retained.
 
-For machines without Node.js, the [CLI installation guide](apps/cli/README.md#standalone-binary) includes standalone downloads, checksum verification, and installation commands. Linux containers need a CA certificate bundle. macOS binaries are not Developer ID signed or notarized.
+The [CLI installation guide](apps/cli/README.md#installation) covers version pinning, custom install directories, and manual downloads. Linux containers need a CA certificate bundle. macOS binaries are not Developer ID signed or notarized.
 
 ## Agent skill
 
-The [Hush skill](skills/hush/SKILL.md) teaches agents to select a Profile, run commands with injected credentials, and handle connection failures without exposing secret values. It includes setup guidance for machines using standalone binaries before npm publication.
+The [Hush skill](skills/hush/SKILL.md) teaches agents to select a Profile, run commands with injected credentials, and handle connection failures without exposing secret values. It includes CLI installation and device enrollment guidance.
 
 Copy the complete `skills/hush/` directory into your agent's configured skills directory, or ask the agent to read `skills/hush/SKILL.md` from this checkout. The skill and its bundled reference can be used independently of this repository; installing the CLI does not automatically install the skill.
 

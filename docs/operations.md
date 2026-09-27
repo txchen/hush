@@ -17,7 +17,14 @@ npm run build -w @hush/web
 
 These commands update the Web admin and API together and reuse the existing database. Back up before upgrades that change storage. The GitHub Actions workflow tests and builds Hush but does not deploy it to your account.
 
-To update an npm CLI installation, run `npm install -g @txchen/hush@latest`, then `hush version`. For a standalone installation, replace the executable with the matching verified archive from [GitHub Releases](https://github.com/txchen/hush/releases/latest). Keep its configuration directory to retain the enrolled identity; do not run `logout` as an upgrade step.
+To update the CLI, rerun the installer, then check `hush version`:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/txchen/hush/main/install.sh | bash
+hush version
+```
+
+If you originally used `HUSH_INSTALL_DIR`, supply the same directory when upgrading. You can also replace the executable with a verified archive from [GitHub Releases](https://github.com/txchen/hush/releases/latest). Keep its configuration directory to retain the enrolled identity; do not run `logout` as an upgrade step.
 
 ## Backups
 

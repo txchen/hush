@@ -57,7 +57,7 @@ JSON is emitted only for successful metadata commands. Check the exit status bef
 
 | Failure                                                          | Next action                                                                                                                                                             |
 | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CLI unavailable or npm returns 404                               | Read [installation guidance](references/setup.md#install-the-cli); use a verified standalone binary when npm distribution is unavailable.                               |
+| CLI unavailable                                                  | Read [installation guidance](references/setup.md#install-the-cli); install a verified binary from GitHub Releases.                                                      |
 | Missing credentials, not enrolled, or Access credentials missing | Read [device connection guidance](references/setup.md#connect-a-machine). Explain the required owner/user step; routine commands should not start an interactive login. |
 | Access denied, expired token, or revoked device                  | Ask the owner to check device registration, the Access Service Auth policy, and token validity. A token refresh requires the user's existing provisioning channel.      |
 | Missing Profile or mapping                                       | Ask the owner to update Web admin, then refetch Profile metadata.                                                                                                       |
