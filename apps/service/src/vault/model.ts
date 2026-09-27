@@ -15,9 +15,9 @@ export const nameSchema = z
   .string()
   .min(1)
   .max(128)
-  // Control characters must not enter names displayed by clients or terminals.
+  // Reject both C0 and C1 controls, matching the CLI's unicode.IsControl check.
   // oxlint-disable-next-line no-control-regex
-  .regex(/^[^\x00-\x1f\x7f]+$/)
+  .regex(/^[^\x00-\x1f\x7f-\x9f]+$/)
   .refine((v) => v === v.trim());
 export const versionSchema = z
   .number()

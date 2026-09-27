@@ -226,6 +226,49 @@ describe("Access identity and browser write boundary", () => {
 });
 
 describe("read-only devices", () => {
+  it("audits sensitive database reads without exposing data or advancing the vault revision", async () => {
+    await initialize();
+    await enroll();
+    const secret = await addSecret(2);
+    const repository = new Repository(env.DB);
+    for (const table of ["vault", "secrets", "devices"]) {
+      expect((await request(`/database/${table}`)).status).toBe(200);
+    }
+    const reads = (await repository.audit(0)).filter((e) => e.action === "database.rows_fetched");
+    expect(reads).toHaveLength(3);
+    expect(reads.map((e) => e.resource_id)).toEqual(["vault", "secrets", "devices"]);
+    for (const read of reads) {
+      expect(read).toMatchObject({ actor_role: "owner", actor_id: "owner-id" });
+    }
+    const serialized = JSON.stringify(reads);
+    for (const value of [secret.envelope.ciphertext, master().ciphertext, wrapped().ciphertext]) {
+      expect(serialized).not.toContain(value);
+    }
+    expect((await repository.snapshot())?.vault.revision).toBe(3);
+
+    await request("/database/audit_log");
+    await request("/database/secrets?offset=-1");
+    await request("/database/secrets", { token: deviceToken });
+    expect((await repository.audit(0)).filter((e) => e.action === "database.rows_fetched")).toEqual(
+      reads,
+    );
+  });
+
+  it("does not return sensitive database rows when audit persistence fails", async () => {
+    await initialize();
+    const secret = await addSecret(1);
+    const recordRead = vi
+      .spyOn(Repository.prototype, "recordRead")
+      .mockRejectedValueOnce(new Error("audit unavailable"));
+    try {
+      const response = await request("/database/secrets");
+      expect(response.status).toBe(500);
+      expect(await response.text()).not.toContain(secret.envelope.ciphertext);
+    } finally {
+      recordRead.mockRestore();
+    }
+  });
+
   it("exposes actual SQLite columns and values only to the owner", async () => {
     await initialize();
     await enroll();
@@ -326,6 +369,28 @@ describe("read-only devices", () => {
 });
 
 describe("encrypted records and profiles", () => {
+  it("rejects Unicode controls in profile names before they can break CLI profile selection", async () => {
+    await initialize();
+    for (const control of ["\u0080", "\u0085", "\u009f"]) {
+      const response = await request(`/profiles/${uuid()}`, {
+        method: "PUT",
+        revision: 1,
+        data: { name: `work${control}profile`, mappings: [] },
+      });
+      expect(response.status).toBe(400);
+    }
+    expect((await new Repository(env.DB).snapshot())?.profiles).toHaveLength(0);
+    expect(
+      (
+        await request(`/profiles/${uuid()}`, {
+          method: "PUT",
+          revision: 1,
+          data: { name: "工作 café 🔐", mappings: [] },
+        })
+      ).status,
+    ).toBe(200);
+  });
+
   it("increments versions for edits and rejects reusing the previous envelope", async () => {
     await initialize();
     const secret = await addSecret(1);

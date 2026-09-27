@@ -85,3 +85,14 @@ func TestCanonicalBinary(t *testing.T) {
 		}
 	}
 }
+
+func TestNameControls(t *testing.T) {
+	for _, name := range []string{"work\x00profile", "work\x7fprofile", "work\u0080profile", "work\u0085profile", "work\u009fprofile"} {
+		if validName(name) {
+			t.Errorf("accepted control character in name %q", name)
+		}
+	}
+	if !validName("工作 café 🔐") {
+		t.Fatal("rejected printable Unicode name")
+	}
+}

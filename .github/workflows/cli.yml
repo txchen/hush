@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [master, main]
     tags: ["v*"]
   pull_request:
   workflow_dispatch:
@@ -26,6 +26,9 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm test
+      - run: npx playwright install --with-deps chromium
+        working-directory: apps/web
+      - run: npm run test:ui
       - run: npm run test:crypto
       - run: npm run test:crypto:go
 

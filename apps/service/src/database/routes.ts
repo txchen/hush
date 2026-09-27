@@ -2,6 +2,7 @@ import type { Hono } from "hono";
 import type { AppEnv } from "../http";
 import { owner } from "../http";
 import { requireCondition } from "../errors";
+import { event } from "../db/repository";
 
 const tables = {
   vault: "singleton",
@@ -38,6 +39,11 @@ export function databaseRoutes(app: Hono<AppEnv>) {
       db.prepare(`SELECT COUNT(*) AS total FROM ${table}`),
       db.prepare(`SELECT * FROM ${table} ORDER BY ${order} LIMIT 50 OFFSET ?`).bind(offset),
     ]);
+    // These tables expose ciphertext or wrapped keys just like the regular fetch
+    // endpoints. Persist the audit event before releasing their contents.
+    if (["vault", "secrets", "devices"].includes(table)) {
+      await c.get("repository").recordRead(event(c.get("actor"), "database.rows_fetched", table));
+    }
     return c.json({
       table,
       columns: columns.results,

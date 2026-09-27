@@ -271,6 +271,39 @@ test("encrypts secret edits, handles conflicts and builds profile mappings", asy
   await expect(page.getByText("private-token-never-upload", { exact: true })).toHaveCount(0);
 });
 
+test("invalidates revealed plaintext after saving and refreshing a changed secret", async ({
+  page,
+}) => {
+  const server = await backend(page);
+  await page.goto("/");
+  await unlock(page);
+  const original = structuredClone(server.state().secrets[0]);
+  const reveal = page.getByRole("button", { name: "Reveal GITHUB_TOKEN" });
+  await reveal.click();
+  await expect(page.getByText(vector.plaintext, { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Value", { exact: true }).fill("updated-secret-value");
+  await dialog.getByRole("button", { name: "Save secret" }).click();
+  await expect(dialog).toHaveCount(0);
+  expect(server.state().secrets[0].version).toBe(2);
+  await expect(page.getByText(vector.plaintext, { exact: true })).toHaveCount(0, {
+    timeout: 2_000,
+  });
+  await reveal.click();
+  await expect(page.getByText("updated-secret-value", { exact: true })).toBeVisible();
+
+  // Simulate a different client replacing the encrypted record before refresh.
+  server.state().secrets[0] = original;
+  server.state().vault.revision++;
+  await page.getByRole("button", { name: "Refresh vault" }).click();
+  await expect(page.getByText("updated-secret-value", { exact: true })).toHaveCount(0, {
+    timeout: 2_000,
+  });
+  await reveal.click();
+  await expect(page.getByText(vector.plaintext, { exact: true })).toBeVisible();
+});
+
 test("database viewer exposes raw ciphertext and never decrypts stored rows", async ({ page }) => {
   await backend(page);
   await page.goto("/");

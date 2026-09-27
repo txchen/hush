@@ -16,24 +16,38 @@ const items = computed(
       s.name.toLowerCase().includes(search.value.toLowerCase()),
     ) ?? [],
 );
-function clear() {
+function clearRevealed() {
   values.value = {};
-  form.value = undefined;
   for (const timer of timers.values()) clearTimeout(timer);
   timers.clear();
 }
+function clear() {
+  clearRevealed();
+  form.value = undefined;
+}
+watch(snapshot, clearRevealed, { flush: "sync" });
 watch(visibility, clear);
 onUnmounted(clear);
 async function reveal(secret: Secret) {
   if (values.value[secret.id] !== undefined) {
     delete values.value[secret.id];
+    clearTimeout(timers.get(secret.id));
+    timers.delete(secret.id);
     return;
   }
+  const current = snapshot.value;
   try {
-    values.value[secret.id] = await session.reveal(secret);
+    const value = await session.reveal(secret);
+    // A refresh during decryption must not repopulate the cache with old data.
+    if (snapshot.value !== current) return;
+    values.value[secret.id] = value;
+    clearTimeout(timers.get(secret.id));
     timers.set(
       secret.id,
-      setTimeout(() => delete values.value[secret.id], 30_000),
+      setTimeout(() => {
+        delete values.value[secret.id];
+        timers.delete(secret.id);
+      }, 30_000),
     );
   } catch (cause) {
     session.error.value = message(cause);
