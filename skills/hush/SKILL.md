@@ -29,7 +29,7 @@ Wrap the tool directly, quoting the exact Profile name when necessary:
 
 ```sh
 hush exec github -- gh api user
-hush exec 'production cloudflare' -- wrangler deploy
+hush exec 'production cloudflare' -- cf deploy --mode production
 hush --config-dir /private/path/hush exec github -- gh api user
 ```
 

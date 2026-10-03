@@ -40,7 +40,7 @@ npm run build
 - `test` builds the Web assets, then runs Workers integration tests and Web crypto tests.
 - `test:crypto` and `test:crypto:go` independently verify the shared cryptographic vectors.
 - `test:cli` runs Go tests with the race detector and `go vet`.
-- `build` builds the Web assets and performs a Worker deployment **dry run**. It does not publish anything.
+- `build` builds the Web assets and builds the Worker with `cf build`. It does not publish anything.
 
 Workers tests use local D1, locally signed test JWTs, and mocked Access public-key discovery. Browser tests use isolated HTTP fixtures with real browser cryptography:
 
@@ -125,7 +125,7 @@ The Worker validates envelope structure, versions, lengths, and known nonce reus
 
 ## Configuration and dependencies
 
-Vite+ is installed locally and invoked through npm scripts. Root overrides align Vite/Vitest and the Cloudflare Workers test pool's Miniflare/workerd with Wrangler; update these together and rerun relevant checks.
+Vite+ is installed locally and invoked through npm scripts. Root overrides align Vite/Vitest and the Cloudflare Workers test pool's Miniflare/workerd with the Wrangler bundler used by `cf`; update these together and rerun relevant checks.
 
 After binding changes, regenerate runtime types with:
 
@@ -136,3 +136,11 @@ npm run types -w @hush/service
 Keep credentials out of source files, fixtures, and logs. Cryptographic fixtures contain deliberately public test keys. Preserve their warning and never reuse them in real vaults.
 
 For the reasons behind the current design, read the [architecture decisions](adr/) and [domain glossary](../CONTEXT.md). The old pre-implementation design proposal has been removed; current behavior is documented in the user guides, protocol, and implementation scopes.
+
+## Cloudflare CLI configuration
+
+Use `cf` for development, builds, type generation, migrations, and deployment. `cloudflare.config.ts` is the shared infrastructure configuration; `wrangler.config.ts` only configures the bundler used by `cf` (asset directory and type-generation behavior). Wrangler remains a local build dependency; no global Wrangler installation is required. Tests configure Miniflare directly and never load the production identity file.
+
+Production commands require `--mode production` and an ignored `deployment.local.json`, copied from `deployment.example.json`. Generated `.cloudflare/` output is ignored because production builds may contain deployment metadata.
+
+cf beta only discovers bundlers directly inside an application's `node_modules`. The root `postinstall` script links the hoisted Wrangler package into `apps/service/node_modules` when needed. This preserves npm's workspace layout while allowing service commands to use `cf`. Run deployment commands from `apps/service`. `npm run types -w @hush/service` writes ignored declarations under `apps/service/.cloudflare/types/`; type checking runs it automatically.

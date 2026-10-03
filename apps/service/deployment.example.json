@@ -1,0 +1,9 @@
+{
+  "accountId": "YOUR_ACCOUNT_ID",
+  "domain": "hush.example.com",
+  "databaseId": "YOUR_DATABASE_ID",
+  "ACCESS_TEAM_DOMAIN": "your-team.cloudflareaccess.com",
+  "ACCESS_AUDIENCE": "YOUR_APPLICATION_AUD",
+  "OWNER_EMAIL": "you@example.com",
+  "ADMIN_ORIGIN": "https://hush.example.com"
+}

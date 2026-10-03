@@ -13,3 +13,7 @@ test-results/
 
 # Generated UI review screenshots
 .scratch/web/*.png
+
+# Local Cloudflare deployment identity and generated build output
+deployment.local.json
+.cloudflare/

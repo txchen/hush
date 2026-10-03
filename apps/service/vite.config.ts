@@ -4,8 +4,11 @@ import { cloudflareTest, readD1Migrations } from "@cloudflare/vitest-pool-worker
 export default defineConfig({
   plugins: [
     cloudflareTest({
-      wrangler: { configPath: "./wrangler.jsonc" },
+      main: "./src/index.ts",
       miniflare: {
+        compatibilityDate: "2026-09-21",
+        compatibilityFlags: ["nodejs_compat"],
+        d1Databases: ["DB"],
         bindings: {
           ACCESS_TEAM_DOMAIN: "hush-test.cloudflareaccess.com",
           ACCESS_AUDIENCE: "hush-test-audience",

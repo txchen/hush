@@ -47,9 +47,9 @@ onMounted(() => {
 async function submit() {
   if (
     action.value === "password" &&
-    (replacement.value.length < 16 || replacement.value !== confirm.value)
+    (replacement.value.length < 12 || replacement.value !== confirm.value)
   ) {
-    validation.value = "Use at least 16 characters and confirm the new password.";
+    validation.value = "Use at least 12 characters and confirm the new password.";
     return;
   }
   const current = password.value;
@@ -156,7 +156,7 @@ async function submit() {
             type="password"
             autocomplete="new-password"
             required
-            minlength="16" /></label
+            minlength="12" /></label
         ><label
           >Confirm new password<input
             v-model="confirm"

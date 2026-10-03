@@ -4,15 +4,15 @@ Start with the [deployment and first-use guide](../README.md). This page covers 
 
 ## Update the service
 
-Keep your deployment's `apps/service/wrangler.jsonc` settings: database ID, Access settings, and custom domain. Review release notes and reconcile those settings with configuration changes when pulling new code; do not replace them with repository placeholders.
+Keep your Git-ignored `apps/service/deployment.local.json`: account and database IDs, Access settings, owner email, and custom domain. Review release notes and reconcile those settings with configuration changes when pulling new code; do not replace them with repository placeholders.
 
 After updating your checkout, run from its root:
 
 ```sh
 npm ci
 npm run build -w @hush/web
-(cd apps/service && npx wrangler d1 migrations apply hush --remote)
-(cd apps/service && npx wrangler deploy)
+(cd apps/service && npx cf d1 migrations apply YOUR_DATABASE_ID --dir migrations)
+(cd apps/service && npx cf deploy --mode production)
 ```
 
 These commands update the Web admin and API together and reuse the existing database. Back up before upgrades that change storage. The GitHub Actions workflow tests and builds Hush but does not deploy it to your account.
@@ -28,11 +28,7 @@ If you originally used `HUSH_INSTALL_DIR`, supply the same directory when upgrad
 
 ## Backups
 
-Export D1 from `apps/service/` to a private path outside this repository:
-
-```sh
-npx wrangler d1 export hush --remote --output /private/backup/hush.sql
-```
+Use the Cloudflare dashboard's D1 export to download a backup to a private path outside this repository. The new CLI's database operations can be discovered with `cf cli search`; do not assume legacy Wrangler export flags apply.
 
 Use a directory you own with restrictive permissions. The export includes encrypted values, key wraps, and readable metadata; anyone holding it can attempt offline master-password guessing. Cloudflare also documents [D1 backup and recovery](https://developers.cloudflare.com/d1/reference/time-travel/).
 
@@ -69,7 +65,7 @@ CLI environment values cannot contain NUL bytes. Cloudflare account quotas and p
 
 | Symptom                                                        | Check                                                                                                                                        |
 | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Web says the service needs configuration, or API returns `503` | Replace placeholder Access settings and owner email in `wrangler.jsonc`, then redeploy.                                                      |
+| Web says the service needs configuration, or API returns `503` | Replace placeholder Access settings and owner email in `apps/service/deployment.local.json`, then redeploy.                                  |
 | Browser cannot sign in                                         | Confirm the Access application covers the correct hostname, has a working login method, and allows your owner email.                         |
 | CLI is redirected to a login page or reports non-JSON data     | Add the machine's token to a **Service Auth** policy on the same Access application. A human Allow policy alone is insufficient.             |
 | API rejects the Access identity                                | Check the team domain and application AUD against the configured application, and confirm the owner email or machine token is correct.       |

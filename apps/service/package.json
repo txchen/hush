@@ -3,12 +3,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
-    "build": "wrangler deploy --dry-run --outdir dist",
-    "types": "wrangler types --strict-vars=false",
-    "typecheck": "tsc --noEmit",
+    "dev": "cf dev",
+    "build": "cf build",
+    "types": "cf workers types",
+    "typecheck": "npm run types && tsc --noEmit",
     "test": "vp test run",
-    "db:migrate": "wrangler d1 migrations apply hush --local"
+    "db:migrate": "cf d1 migrations apply 00000000-0000-4000-8000-000000000000 --local --dir migrations"
   },
   "dependencies": {
     "hono": "4.13.8",
@@ -17,6 +17,6 @@
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "0.22.0",
-    "wrangler": "4.136.1"
+    "wrangler": "4.147.0"
   }
 }

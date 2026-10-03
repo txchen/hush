@@ -9,8 +9,8 @@ const trust = ref(false);
 const validation = ref("");
 async function submit() {
   validation.value = "";
-  if (phase.value === "setup" && (password.value.length < 16 || password.value !== confirm.value)) {
-    validation.value = "Use at least 16 characters and enter the same password twice.";
+  if (phase.value === "setup" && (password.value.length < 12 || password.value !== confirm.value)) {
+    validation.value = "Use at least 12 characters and enter the same password twice.";
     return;
   }
   const value = password.value;

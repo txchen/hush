@@ -4,7 +4,7 @@ A personal secret vault for coding agents. Deploy it to your Cloudflare account,
 
 ```sh
 hush exec github -- gh api user
-hush exec cloudflare -- wrangler deploy
+hush exec cloudflare -- cf deploy --mode production
 ```
 
 Secret values are encrypted before they reach the server. A **Profile** maps selected secrets to environment variables; `hush exec` decrypts those values locally and passes them to the command. The CLI supports Linux x86_64, Linux ARM64, and Apple Silicon macOS.
@@ -30,7 +30,7 @@ flowchart LR
     subgraph machine["Your agent machine"]
         Agent["Coding agent"]
         CLI["hush CLI<br/>Decrypt locally"]
-        Command["Command<br/>gh, wrangler, ..."]
+        Command["Command<br/>gh, cf, ..."]
         Agent -->|"hush exec profile -- command"| CLI
         CLI -->|"Selected environment variables"| Command
     end
@@ -51,8 +51,8 @@ You need a Cloudflare account with Workers, D1, and Zero Trust Access, a domain 
 git clone https://github.com/txchen/hush.git
 cd hush
 npm ci
-(cd apps/service && npx wrangler login)
-(cd apps/service && npx wrangler d1 create hush)
+(cd apps/service && npx cf auth login)
+(cd apps/service && npx cf d1 create --name hush)
 ```
 
 Keep the returned database ID for step 3. The database holds encrypted secret values, wrapped keys, and metadata. See Cloudflare's [D1 setup guide](https://developers.cloudflare.com/d1/get-started/) if your account needs additional setup.
@@ -69,29 +69,15 @@ Access sign-in authorizes you to use the service. Your Hush master password, cre
 
 ### 3. Configure Hush
 
-Edit [`apps/service/wrangler.jsonc`](apps/service/wrangler.jsonc). Replace its existing `vars` and `d1_databases` entries and add `routes` using your own values:
+The shared [`apps/service/cloudflare.config.ts`](apps/service/cloudflare.config.ts) contains no deployment identity. Copy the example into a Git-ignored local file:
 
-```jsonc
-{
-  "routes": [{ "pattern": "hush.example.com", "custom_domain": true }],
-  "vars": {
-    "ACCESS_TEAM_DOMAIN": "your-team.cloudflareaccess.com",
-    "ACCESS_AUDIENCE": "your-access-application-aud",
-    "OWNER_EMAIL": "you@example.com",
-    "ADMIN_ORIGIN": "https://hush.example.com",
-  },
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "hush",
-      "database_id": "your-database-id",
-      "migrations_dir": "migrations",
-    },
-  ],
-}
+```sh
+cp apps/service/deployment.example.json apps/service/deployment.local.json
 ```
 
-This is a configuration excerpt: retain the other existing fields, including `main`, `assets`, and compatibility settings. Keep `workers_dev` and `preview_urls` disabled. `ACCESS_TEAM_DOMAIN` is a hostname without `https://`; `ADMIN_ORIGIN` includes `https://` and has no trailing slash. Never put your master password, device private key, or Access Client Secret into this file.
+Fill in your account ID, D1 database ID, hostname, Access team domain, application AUD, owner email, and admin origin. `ACCESS_TEAM_DOMAIN` is a hostname without `https://`; `ADMIN_ORIGIN` includes `https://` with no trailing slash. Never put passwords or API tokens in this file.
+
+`--mode production` loads this local file; ordinary builds and tests use generic defaults. Keep `workersDev` and `previewUrls` disabled. Select your authentication profile with `--profile PROFILE` when using multiple accounts. Deployment IDs and email addresses belong only in the ignored file, not the shared configuration.
 
 The route uses a Workers [Custom Domain](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/). Cloudflare provisions its DNS record and certificate; choose a hostname without an existing conflicting CNAME record.
 
@@ -101,8 +87,8 @@ Run from the repository root:
 
 ```sh
 npm run build -w @hush/web
-(cd apps/service && npx wrangler d1 migrations apply hush --remote)
-(cd apps/service && npx wrangler deploy)
+(cd apps/service && npx cf d1 migrations apply YOUR_DATABASE_ID --dir migrations)
+(cd apps/service && npx cf deploy --mode production)
 ```
 
 Open `https://hush.example.com` and sign in through Access. You should see **Create your vault**. If setup fails, see [troubleshooting](docs/operations.md#troubleshooting).

@@ -21,22 +21,26 @@
     "build": "npm run build -w @hush/web && npm run build -w @hush/service",
     "db:migrate": "npm run db:migrate -w @hush/service",
     "dev:web": "npm run dev -w @hush/web",
-    "test:ui": "npm run test:ui -w @hush/web"
+    "test:ui": "npm run test:ui -w @hush/web",
+    "postinstall": "node scripts/link-cf-bundler.mjs"
   },
   "devDependencies": {
     "@hpke/core": "1.9.0",
     "@noble/hashes": "2.4.0",
     "@types/node": "^24.0.0",
+    "cf": "1.0.0-beta.12",
     "typescript": "~5.9.3",
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.3.3",
     "vite-plus": "0.3.3",
+    "wrangler": "4.147.0",
     "yaml": "2.9.1"
   },
   "overrides": {
-    "miniflare": "5.20260921.0-alpha",
-    "vite": "npm:@voidzero-dev/vite-plus-core@0.3.3",
+    "miniflare": "5.20261001.0-alpha",
+    "vite": "$vite",
     "vitest": "4.1.11",
-    "workerd": "1.20260921.1",
-    "wrangler": "4.136.1"
+    "workerd": "1.20261001.1",
+    "wrangler": "4.147.0"
   },
   "engines": {
     "node": ">=24.0.0"

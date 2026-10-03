@@ -104,7 +104,7 @@ hush status --json
 hush secret list --json
 hush profile list --json
 hush exec github -- gh api user
-hush exec cloudflare -- wrangler deploy
+hush exec cloudflare -- cf deploy --mode production
 ```
 
 Profile selection uses the exact Profile name. The owner creates Profiles and their environment mappings in Web admin. Lists return metadata only, even with `--json`; there are no `get`, `show`, or `copy` commands.
